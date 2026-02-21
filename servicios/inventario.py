@@ -1,76 +1,87 @@
-# servicios/inventario.py
+import os
 from modelos.producto import Producto
+
 class Inventario:
-    """
-    Clase encargada de gestionar los productos.
-    """
-
-    def __init__(self):
-        # Lista que almacena los productos
+    def __init__(self, archivo="inventario.txt"):
+        self.archivo = archivo
         self.productos = []
+        self.cargar_desde_archivo()
 
-    def añadir_producto(self, producto):
-        """
-        Añade un nuevo producto si el ID no está repetido.
-        """
-        for p in self.productos:
-            if p.get_id() == producto.get_id():
-                print("❌ Error: Ya existe un producto con ese ID.")
-                return False
+    # ================================
+    # Cargar productos desde archivo
+    # ================================
+    def cargar_desde_archivo(self):
+        try:
+            # Si no existe el archivo, lo crea vacío
+            if not os.path.exists(self.archivo):
+                open(self.archivo, "w").close()
 
-        self.productos.append(producto)
-        print("✅ Producto añadido correctamente.")
-        return True
+            with open(self.archivo, "r") as file:
+                for linea in file:
+                    datos = linea.strip().split(",")
+                    if len(datos) == 4:
+                        codigo, nombre, cantidad, precio = datos
+                        producto = Producto(codigo, nombre, int(cantidad), float(precio))
+                        self.productos.append(producto)
 
-    def eliminar_producto(self, id_producto):
-        """
-        Elimina un producto por su ID.
-        """
-        for p in self.productos:
-            if p.get_id() == id_producto:
-                self.productos.remove(p)
-                print("✅ Producto eliminado correctamente.")
-                return True
+            print("✔ Inventario cargado correctamente.")
+
+        except FileNotFoundError:
+            print("❌ Error: Archivo no encontrado.")
+        except PermissionError:
+            print("❌ Error: No tienes permisos para leer el archivo.")
+        except Exception as e:
+            print("❌ Error al cargar el archivo:", e)
+
+    # ================================
+    # Guardar en archivo
+    # ================================
+    def guardar_en_archivo(self):
+        try:
+            with open(self.archivo, "w") as file:
+                for producto in self.productos:
+                    file.write(f"{producto.codigo},{producto.nombre},{producto.cantidad},{producto.precio}\n")
+
+            print("✔ Cambios guardados en el archivo.")
+
+        except PermissionError:
+            print("❌ Error: No tienes permisos para escribir en el archivo.")
+        except Exception as e:
+            print("❌ Error al guardar el archivo:", e)
+
+    # ================================
+    # Añadir producto
+    # ================================
+    def añadir_producto(self, codigo, nombre, cantidad, precio):
+        for producto in self.productos:
+            if producto.codigo == codigo:
+                print("❌ El producto ya existe.")
+                return
+
+        nuevo_producto = Producto(codigo, nombre, cantidad, precio)
+        self.productos.append(nuevo_producto)
+        self.guardar_en_archivo()
+        print("✔ Producto añadido correctamente.")
+
+    # ================================
+    # Eliminar producto
+    # ================================
+    def eliminar_producto(self, codigo):
+        for producto in self.productos:
+            if producto.codigo == codigo:
+                self.productos.remove(producto)
+                self.guardar_en_archivo()
+                print("✔ Producto eliminado correctamente.")
+                return
 
         print("❌ Producto no encontrado.")
-        return False
 
-    def actualizar_producto(self, id_producto, nueva_cantidad=None, nuevo_precio=None):
-        """
-        Actualiza cantidad y/o precio de un producto por ID.
-        """
-        for p in self.productos:
-            if p.get_id() == id_producto:
-                if nueva_cantidad is not None:
-                    p.set_cantidad(nueva_cantidad)
-                if nuevo_precio is not None:
-                    p.set_precio(nuevo_precio)
-
-                print("✅ Producto actualizado correctamente.")
-                return True
-
-        print("❌ Producto no encontrado.")
-        return False
-
-    def buscar_por_nombre(self, nombre):
-        """
-        Busca productos por coincidencia parcial en el nombre.
-        """
-        resultados = []
-        for p in self.productos:
-            if nombre.lower() in p.get_nombre().lower():
-                resultados.append(p)
-
-        return resultados
-
-    def mostrar_inventario(self):
-        """
-        Muestra todos los productos registrados.
-        """
+    # ================================
+    # Mostrar productos
+    # ================================
+    def mostrar_productos(self):
         if not self.productos:
-            print("📦 El inventario está vacío.")
-            return
-
-        print("\n📋 Inventario actual:")
-        for p in self.productos:
-            print(p)
+            print("Inventario vacío.")
+        else:
+            for producto in self.productos:
+                print(f"Código: {producto.codigo} | Nombre: {producto.nombre} | Cantidad: {producto.cantidad} | Precio: {producto.precio}")
